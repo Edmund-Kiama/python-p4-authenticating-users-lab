@@ -18,6 +18,30 @@ db.init_app(app)
 
 api = Api(app)
 
+class Login(Resource):
+    def post(self):
+        user = User.query.filter(
+            User.username == request.get_json()["username"]
+        ).first()
+        if not user:
+            return make_response({"error":"User not found"}, 404)
+        session["user_id"] = user.id
+        return make_response(user.to_dict(), 200)
+
+class CheckSession(Resource):
+    def get(self):
+        user = User.query.filter(User.id == session.get("user_id")).first()
+
+        if not user:
+            return make_response({}, 401)
+
+        return make_response(user.to_dict(), 200)
+    
+class Logout(Resource):
+    def delete(self):
+        session["user_id"] = None
+        return make_response({}, 204)
+
 class ClearSession(Resource):
 
     def delete(self):
@@ -51,6 +75,9 @@ class ShowArticle(Resource):
 api.add_resource(ClearSession, '/clear')
 api.add_resource(IndexArticle, '/articles')
 api.add_resource(ShowArticle, '/articles/<int:id>')
+api.add_resource(Login, "/login")
+api.add_resource(Logout, "/logout")
+api.add_resource(CheckSession, "/check_session")
 
 
 if __name__ == '__main__':
